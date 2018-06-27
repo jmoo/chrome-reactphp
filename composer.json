@@ -11,8 +11,8 @@
     }
   ],
   "support": {
-    "issues": "https://github.com/jmoo/chrome-react/issues",
-    "source": "https://github.com/jmoo/chrome-react"
+    "issues": "https://github.com/jmoo/chrome-reactphp/issues",
+    "source": "https://github.com/jmoo/chrome-reactphp"
   },
   "require": {
     "php": "^7.1",
