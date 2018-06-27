@@ -1,8 +1,10 @@
 # jmoo/chrome-react
+``` composer require jmoo/chrome-react ```
 
-Fully async, low-level client for the Chrome Devtools Protocol using ReactPHP
+Fully async, low-level client for the Chrome DevTools Protocol using ReactPHP
 
 *Warning: Experimental! Expect large breaking changes, instability, and lack of documentation until there is a tagged version*
+
 
 ### Quickstart
 ```bash
