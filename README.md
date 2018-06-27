@@ -1,13 +1,19 @@
 # jmoo/chrome-react
-``` composer require jmoo/chrome-react ```
+
+
+[![Build Status](https://travis-ci.com/jmoo/chrome-reactphp.svg?branch=master)](https://travis-ci.com/jmoo/chrome-reactphp)
+
+
 
 Fully async, low-level client for the Chrome DevTools Protocol using ReactPHP
 
+
 *Warning: Experimental! Expect large breaking changes, instability, and lack of documentation until there is a tagged version*
 
-
 ### Quickstart
+
 ```bash
+$ composer require jmoo/chrome-react
 $ chrome --headless --disable-gpu --remote-debugging-port=9222
 ```
 
