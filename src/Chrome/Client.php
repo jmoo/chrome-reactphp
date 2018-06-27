@@ -30,6 +30,11 @@ class Client extends EventEmitter
     private $webSocketConnector;
 
     /**
+     * @var Connector
+     */
+    private $httpConnector;
+
+    /**
      * @var LoopInterface
      */
     private $loop;
@@ -60,10 +65,11 @@ class Client extends EventEmitter
         $this->loop = $loop ?: Factory::create();
 
         $defaultConnector = new Connector($this->loop);
-        $this->webSocketConnector = new \Ratchet\Client\Connector($this->loop, $webSocketConnector ?: $defaultConnector);
-        $this->browser = new Browser($this->loop, $webSocketConnector ?: $defaultConnector);
+        $this->httpConnector = $httpConnector ?: $defaultConnector;
+        $this->webSocketConnector = $webSocketConnector ?: $defaultConnector;
+        $this->browser = new Browser($this->loop, $this->httpConnector);
 
-        $this->applyOptions($options);
+        $this->applyOptions($options + $this->options);
     }
 
     public function new(): AwaitablePromise
@@ -98,8 +104,12 @@ class Client extends EventEmitter
 
     public function withOptions(array $options = []): Client
     {
-        $client = new Client($this->loop, $this->browser, array_merge_recursive($this->options, $options));
-        return $client;
+        return new Client(
+            $this->loop,
+            $this->httpConnector,
+            $this->webSocketConnector,
+            $options + $this->options
+        );
     }
 
     public function connect($url): AwaitablePromise
@@ -108,8 +118,7 @@ class Client extends EventEmitter
             $url = $this->getWebsocketProxyUrl($url);
         }
 
-        $connector = $this->webSocketConnector;
-
+        $connector = new \Ratchet\Client\Connector($this->loop, $this->webSocketConnector);
         $promise = $connector($url, $this->options['subProtocols'], $this->options['connectionHeaders'])
             ->then(function ($socket) use ($url) {
                 return new Connection($socket, $this->loop);
@@ -177,7 +186,7 @@ class Client extends EventEmitter
 
     private function applyOptions(array $options): void
     {
-        $this->options = array_merge_recursive($this->options, $options);
+        $this->options = $options;
         $this->base = $this->options['host'] . ':' . $this->options['port'];
         $this->browser = $this->browser
             ->withBase("http" . ($this->options['ssl'] ? 's' : '') . "://" . $this->base)
