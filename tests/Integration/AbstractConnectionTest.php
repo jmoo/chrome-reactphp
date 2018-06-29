@@ -8,6 +8,8 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use React\EventLoop\Factory;
+use React\EventLoop\LoopInterface;
 
 abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
 {
@@ -28,6 +30,11 @@ abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
      */
     protected $client;
 
+    /**
+     * @var LoopInterface
+     */
+    protected $loop;
+
     protected abstract function connect(): ConnectionInterface;
 
     protected function setUp($logFile = null)
@@ -35,7 +42,8 @@ abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
         $this->log = new Logger(get_class($this));
         $this->log->pushHandler(new StreamHandler($logFile ?: __DIR__ . '/../../chrome.log'));
 
-        $this->client = new Client;
+        $this->loop = Factory::create();
+        $this->client = new Client($this->loop);
         $this->attachLoggerToClient($this->client);
 
         $this->connection = $this->connect();
@@ -45,11 +53,11 @@ abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
     {
         $client
             ->on('request', function (RequestInterface $request) {
-                $this->log->debug("-> " . $request->getMethod() . ' ' . $request->getUri() . "\n");
+                $this->log->debug("-> " . $request->getMethod() . ' ' . $request->getUri());
             })
             ->on('response', function (ResponseInterface $response) {
                 $body = trim($response->getBody()->getContents());
-                $this->log->debug("<- " . $response->getStatusCode() . " $body\n");
+                $this->log->debug("<- " . $response->getStatusCode() . " $body");
             });
     }
 
@@ -57,18 +65,21 @@ abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
     {
         $connection
             ->on('send', function ($message) {
-                $this->log->debug('-> ' . $message->id . ': ' . $message->method . ' - ' . json_encode($message->params) . "\n");
+                $this->log->debug('-> ' . $message->id . ': ' . $message->method . ' - ' . json_encode($message->params));
             })
             ->on('receive', function ($response) {
-                $this->log->debug('<- ' . json_encode($response) . "\n");
+                $this->log->debug('<- ' . json_encode($response));
             })
             ->on('error', function (\Exception $ex) {
                 $this->log->error($ex->getMessage());
+            })
+            ->on('close', function() {
+                $this->log->info("connection closed");
             });
     }
 
     protected function tearDown()
     {
-        $this->connection->disconnect();
+       // $this->connection->disconnect();
     }
 }

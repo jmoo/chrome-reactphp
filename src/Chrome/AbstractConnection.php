@@ -36,6 +36,14 @@ abstract class AbstractConnection extends EventEmitter implements ConnectionInte
     public function __construct(LoopInterface $loop)
     {
         $this->loop = $loop;
+
+        $this->on('close', function () {
+            $ex = new \RuntimeException('Connection terminated');
+            foreach ($this->messages as $definition) {
+                list(, $reject) = $definition;
+                $reject($ex);
+            }
+        });
     }
 
     public function enable(array $domains): AwaitablePromise

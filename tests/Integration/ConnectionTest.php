@@ -4,6 +4,8 @@ namespace Jmoo\React\Chrome\Tests\Integration;
 
 use Jmoo\React\Chrome\Client;
 use Jmoo\React\Chrome\ConnectionInterface;
+use Jmoo\React\Support\AwaitablePromise;
+use React\Promise\Promise;
 
 class ConnectionTest extends AbstractConnectionTest
 {
