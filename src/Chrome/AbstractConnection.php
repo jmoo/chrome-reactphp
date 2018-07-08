@@ -9,6 +9,9 @@ use Jmoo\React\Support\AwaitablePromise;
 use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 
+/**
+ * @internal
+ */
 abstract class AbstractConnection extends EventEmitter implements ConnectionInterface
 {
     use AsyncOperations;
@@ -48,32 +51,21 @@ abstract class AbstractConnection extends EventEmitter implements ConnectionInte
 
     public function enable(array $domains): AwaitablePromise
     {
-        $out = [];
+        $promises = [];
 
-        $promise = new Promise(function ($resolve, $err) use ($domains, &$out) {
-            $resolver = function ($index, $domain) use ($domains, &$out, $resolve) {
-                $out[$index] = $this->getDomain($domain);
+        foreach ($domains as $domain) {
+            $promises[] = $this->send($domain . '.enable');
+        }
 
-                if (count($out) === count($domains)) {
-                    $resolve($out);
-                }
-            };
+        return AwaitablePromise::all($promises, $this->loop)->then(function() use ($domains) {
+            $out = [];
 
-            foreach ($domains as $i => $domain) {
-                $this
-                    ->send($domain . '.enable')
-                    ->then(
-                        function () use ($i, $domain, $resolver) {
-                            return $resolver($i, $domain);
-                        },
-                        function ($ex) use ($err) {
-                            return $err($ex);
-                        });
+            foreach($domains as $domain) {
+                $out[] = $this->getDomain($domain);
             }
 
+            return $out;
         });
-
-        return new AwaitablePromise($promise, $this->loop);
     }
 
     public function getDomain($name): Domain
