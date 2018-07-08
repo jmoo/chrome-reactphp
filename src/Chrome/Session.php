@@ -44,15 +44,17 @@ class Session extends AbstractConnection
         $args->method = $method;
         $args->params = $params;
 
+        $promise = new Promise(function ($resolve, $err) use ($args) {
+            $this->messages[$args->id] = [$resolve, $err];
+        });
+
         return $this->connection
             ->send('Target.sendMessageToTarget', [
                 'sessionId' => $this->sessionId,
                 'message' => json_encode($args)
             ])
-            ->then(function () use ($args) {
-                return new Promise(function ($resolve, $err) use ($args) {
-                    $this->messages[$args->id] = [$resolve, $err];
-                });
+            ->then(function () use ($promise) {
+                return $promise;
             });
     }
 
