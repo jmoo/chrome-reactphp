@@ -1,21 +1,16 @@
 <?php
 
-namespace Jmoo\React\Chrome;
+namespace Jmoo\React\Chrome\Async;
 
 use Evenement\EventEmitter;
+use Jmoo\React\Chrome\ConnectionInterface;
 use Jmoo\React\Chrome\Exception\ProtocolErrorException;
-use Jmoo\React\Support\AsyncOperations;
-use Jmoo\React\Support\AwaitablePromise;
 use React\EventLoop\LoopInterface;
-use React\Promise\Promise;
+use function React\Promise\all;
+use React\Promise\PromiseInterface;
 
-/**
- * @internal
- */
 abstract class AbstractConnection extends EventEmitter implements ConnectionInterface
 {
-    use AsyncOperations;
-
     /**
      * @var int
      */
@@ -49,7 +44,7 @@ abstract class AbstractConnection extends EventEmitter implements ConnectionInte
         });
     }
 
-    public function enable(array $domains): AwaitablePromise
+    public function enable(array $domains): PromiseInterface
     {
         $promises = [];
 
@@ -57,10 +52,10 @@ abstract class AbstractConnection extends EventEmitter implements ConnectionInte
             $promises[] = $this->send($domain . '.enable');
         }
 
-        return AwaitablePromise::all($promises, $this->loop)->then(function() use ($domains) {
+        return all($promises)->then(function () use ($domains) {
             $out = [];
 
-            foreach($domains as $domain) {
+            foreach ($domains as $domain) {
                 $out[] = $this->getDomain($domain);
             }
 
@@ -75,7 +70,7 @@ abstract class AbstractConnection extends EventEmitter implements ConnectionInte
             : $this->domains[$name] = new Domain($this, $name);
     }
 
-    protected function getLoop()
+    public function getLoop(): LoopInterface
     {
         return $this->loop;
     }

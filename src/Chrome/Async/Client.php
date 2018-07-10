@@ -1,43 +1,37 @@
 <?php
 
-namespace Jmoo\React\Chrome;
+namespace Jmoo\React\Chrome\Async;
 
 use Evenement\EventEmitter;
-use Jmoo\React\Support\AsyncOperations;
-use Jmoo\React\Support\AwaitablePromise;
 use Clue\React\Buzz\Browser;
+use Jmoo\React\Chrome\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectorInterface;
 use RingCentral\Psr7\Response;
 use function RingCentral\Psr7\stream_for;
 
-class Client extends EventEmitter
+class Client extends EventEmitter implements ClientInterface
 {
-    use AsyncOperations;
-
     /**
      * @var Browser
      */
     private $browser;
 
     /**
-     * @var Connector
-     */
-    private $webSocketConnector;
-
-    /**
-     * @var Connector
-     */
-    private $httpConnector;
-
-    /**
      * @var LoopInterface
      */
     private $loop;
+
+    /**
+     * @var Connector
+     */
+    private $connector;
 
     /**
      * @var string
@@ -56,43 +50,42 @@ class Client extends EventEmitter
         'ws_proxy' => null
     ];
 
-    public function __construct(
-        LoopInterface $loop = null,
-        ConnectorInterface $httpConnector = null,
-        ConnectorInterface $webSocketConnector = null,
-        array $options = [])
+    public function __construct(LoopInterface $loop = null, ConnectorInterface $connector = null)
     {
         $this->loop = $loop ?: Factory::create();
-
-        $defaultConnector = new Connector($this->loop);
-        $this->httpConnector = $httpConnector ?: $defaultConnector;
-        $this->webSocketConnector = $webSocketConnector ?: $defaultConnector;
-        $this->browser = new Browser($this->loop, $this->httpConnector);
-
-        $this->applyOptions($options + $this->options);
+        $this->connector = $connector ?: new Connector($this->loop);
+        $this->browser = new Browser($this->loop, $this->connector);
+        $this->applyOptions();
     }
 
-    public function new(): AwaitablePromise
+    public function withOptions(array $options = [])
+    {
+        $client = clone $this;
+        $client->applyOptions($options);
+        return $client;
+    }
+
+    public function new(): PromiseInterface
     {
         return $this->request('POST', '/json/new');
     }
 
-    public function list(): AwaitablePromise
+    public function list(): PromiseInterface
     {
         return $this->request('GET', '/json');
     }
 
-    public function version(): AwaitablePromise
+    public function version(): PromiseInterface
     {
         return $this->request('GET', '/json/version');
     }
 
-    public function activate($pageId): AwaitablePromise
+    public function activate($pageId): PromiseInterface
     {
         return $this->request('POST', '/json/activate/' . $pageId);
     }
 
-    public function close($pageId): AwaitablePromise
+    public function close($pageId): PromiseInterface
     {
         return $this->request('POST', '/json/close/' . $pageId);
     }
@@ -102,39 +95,33 @@ class Client extends EventEmitter
         return $this->loop;
     }
 
-    public function withOptions(array $options = []): Client
-    {
-        return new Client(
-            $this->loop,
-            $this->httpConnector,
-            $this->webSocketConnector,
-            $options + $this->options
-        );
-    }
-
-    public function connect($url): AwaitablePromise
+    public function connect($url): PromiseInterface
     {
         if (!empty($this->options['ws_proxy'])) {
             $url = $this->getWebsocketProxyUrl($url);
         }
 
-        $connector = new \Ratchet\Client\Connector($this->loop, $this->webSocketConnector);
-        $promise = $connector($url, $this->options['subProtocols'], $this->options['connectionHeaders'])
+        $connector = new \Ratchet\Client\Connector($this->loop, $this->connector);
+
+        return $connector($url, $this->options['subProtocols'], $this->options['connectionHeaders'])
             ->then(function ($socket) use ($url) {
                 return new Connection($socket, $this->loop);
             });
-
-        return new AwaitablePromise($promise, $this->loop);
     }
 
-    public function request(string $method, string $endpoint, array $headers = [], $body = ''): AwaitablePromise
+    public function request(string $method, string $endpoint, array $headers = [], $body = ''): PromiseInterface
     {
-        $req = new \RingCentral\Psr7\Request($method, $endpoint, $headers, stream_for($body), '1.1');
-        $this->emit('request', [$req]);
+        $request = new \RingCentral\Psr7\Request($method, $endpoint, $headers, stream_for($body), '1.1');
+        return $this->send($request);
+    }
 
-        $promise = new Promise(function ($resolve, $reject) use ($req) {
+    public function send(RequestInterface $request)
+    {
+        $this->emit('request', [$request]);
+
+        return new Promise(function ($resolve, $reject) use ($request) {
             $this->browser
-                ->send($req)
+                ->send($request)
                 ->then(function (ResponseInterface $response) use ($resolve, $reject) {
                     /* @var $body \React\Stream\ReadableStreamInterface */
                     $body = $response->getBody();
@@ -168,8 +155,6 @@ class Client extends EventEmitter
                     });
                 }, $reject);
         });
-
-        return new AwaitablePromise($promise, $this->loop);
     }
 
     private function getWebsocketProxyUrl($url): string
@@ -184,9 +169,9 @@ class Client extends EventEmitter
         return substr_replace($url, "ws" . ($ssl ? 's' : '') . "://$host:$port", 0, strlen($oldBase));
     }
 
-    private function applyOptions(array $options): void
+    private function applyOptions(array $options = []): void
     {
-        $this->options = $options;
+        $this->options = $options + $this->options;
         $this->base = $this->options['host'] . ':' . $this->options['port'];
         $this->browser = $this->browser
             ->withBase("http" . ($this->options['ssl'] ? 's' : '') . "://" . $this->base)

@@ -1,9 +1,8 @@
 <?php
 
-namespace Jmoo\React\Chrome;
+namespace Jmoo\React\Chrome\Async;
 
-use Jmoo\React\Support\AwaitablePromise;
-use React\EventLoop\LoopInterface;
+use React\Promise\PromiseInterface;
 use React\Promise\Promise;
 
 class Session extends AbstractConnection
@@ -14,13 +13,13 @@ class Session extends AbstractConnection
     private $sessionId;
 
     /**
-     * @var ConnectionInterface
+     * @var Connection
      */
     private $connection;
 
-    public function __construct(ConnectionInterface $connection, LoopInterface $loop, $sessionId)
+    public function __construct(Connection $connection, $sessionId)
     {
-        parent::__construct($loop);
+        parent::__construct($connection->getLoop());
         $this->connection = $connection;
         $this->sessionId = $sessionId;
 
@@ -37,7 +36,7 @@ class Session extends AbstractConnection
         });
     }
 
-    public function send($method, $params = []): AwaitablePromise
+    public function send($method, $params = []): PromiseInterface
     {
         $args = new \stdClass;
         $args->id = $this->messageId++;
@@ -61,5 +60,13 @@ class Session extends AbstractConnection
     public function disconnect()
     {
         $this->connection->send('Target.detachFromTarget');
+    }
+
+    /**
+     * @internal
+     */
+    public function createSession($targetId)
+    {
+        throw new \RuntimeException('Sessions cannot be initialized recursively.');
     }
 }

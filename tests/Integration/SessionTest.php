@@ -2,22 +2,21 @@
 
 namespace Jmoo\React\Chrome\Tests\Integration;
 
-use Jmoo\React\Chrome\Connection;
+use Jmoo\React\Chrome\Blocking\Connection;
 use Jmoo\React\Chrome\ConnectionInterface;
 
 class SessionTest extends AbstractConnectionTest
 {
     protected function connect(): ConnectionInterface
     {
-        $timeout = AbstractConnectionTest::TIMEOUT;
-        $version = $this->client->version()->await($timeout);
+        $version = $this->client->version();
 
         /** @var Connection $connection */
-        $connection = $this->client->connect($version->webSocketDebuggerUrl)->await($timeout);
+        $connection = $this->client->connect($version->webSocketDebuggerUrl);
         $this->attachLoggerToConnection($connection);
 
-        $target = $connection->send('Target.createTarget', ['url' => 'about:blank'])->await($timeout);
-        return $connection->createSession($target->targetId)->await($timeout);
+        $target = $connection->send('Target.createTarget', ['url' => 'about:blank']);
+        return $connection->createSession($target->targetId);
     }
 
     /**
@@ -26,12 +25,8 @@ class SessionTest extends AbstractConnectionTest
      */
     public function canSendMessageAndReceiveResponse()
     {
-        $this->connection
-            ->send('Page.enable')
-            ->then(function ($msg) {
-                $this->assertInstanceOf(\stdClass::class, $msg);
-            })
-            ->await(self::TIMEOUT);
+        $msg = $this->connection->send('Page.enable');
+        $this->assertInstanceOf(\stdClass::class, $msg);
     }
 
     /**
@@ -40,12 +35,7 @@ class SessionTest extends AbstractConnectionTest
      */
     public function canSendMessageToDomainAndReceiveResponse()
     {
-        $this->connection
-            ->getDomain('Page')
-            ->send('enable')
-            ->then(function ($msg) {
-                $this->assertInstanceOf(\stdClass::class, $msg);
-            })
-            ->await(self::TIMEOUT);
+        $msg = $this->connection->getDomain('Page')->send('enable');
+        $this->assertInstanceOf(\stdClass::class, $msg);
     }
 }

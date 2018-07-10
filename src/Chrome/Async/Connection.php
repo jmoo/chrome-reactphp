@@ -1,12 +1,12 @@
 <?php
 
-namespace Jmoo\React\Chrome;
+namespace Jmoo\React\Chrome\Async;
 
 use Evenement\EventEmitterInterface;
-use Jmoo\React\Support\AwaitablePromise;
 use Ratchet\Client\WebSocket;
 use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
+use React\Promise\PromiseInterface;
 
 class Connection extends AbstractConnection
 {
@@ -46,7 +46,7 @@ class Connection extends AbstractConnection
             });
     }
 
-    public function send($method, $params = []): AwaitablePromise
+    public function send($method, $params = []): PromiseInterface
     {
         $args = new \stdClass;
         $args->id = $this->messageId++;
@@ -55,10 +55,10 @@ class Connection extends AbstractConnection
 
         $this->emit('send', [$args]);
 
-        return new AwaitablePromise(new Promise(function ($resolve, $err) use ($args) {
+        return new Promise(function ($resolve, $err) use ($args) {
             $this->messages[$args->id] = [$resolve, $err];
             $this->socket->send(json_encode($args));
-        }), $this->loop);
+        });
     }
 
     public function disconnect()
@@ -66,12 +66,12 @@ class Connection extends AbstractConnection
         $this->socket->close();
     }
 
-    public function createSession($targetId): AwaitablePromise
+    public function createSession($targetId): PromiseInterface
     {
         return $this
             ->send('Target.attachToTarget', ['targetId' => $targetId])
             ->then(function ($response) use ($targetId) {
-                return $this->sessions[$response->sessionId] = new Session($this, $this->loop, $response->sessionId);
+                return $this->sessions[$response->sessionId] = new Session($this, $response->sessionId);
             });
     }
 

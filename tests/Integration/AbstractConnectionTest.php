@@ -2,8 +2,10 @@
 
 namespace Jmoo\React\Chrome\Tests\Integration;
 
-use Jmoo\React\Chrome\Client;
+use Jmoo\React\Chrome\Blocking\Client as BlockingClient;
+use Jmoo\React\Chrome\ClientInterface;
 use Jmoo\React\Chrome\ConnectionInterface;
+use Jmoo\React\Chrome\Async\Client as AsyncClient;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Http\Message\RequestInterface;
@@ -26,7 +28,7 @@ abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
     protected $connection;
 
     /**
-     * @var Client
+     * @var SyncClient
      */
     protected $client;
 
@@ -43,13 +45,13 @@ abstract class AbstractConnectionTest extends \PHPUnit\Framework\TestCase
         $this->log->pushHandler(new StreamHandler($logFile ?: __DIR__ . '/../../chrome.log'));
 
         $this->loop = Factory::create();
-        $this->client = new Client($this->loop);
+        $this->client = new BlockingClient(new AsyncClient($this->loop));
         $this->attachLoggerToClient($this->client);
 
         $this->connection = $this->connect();
     }
 
-    protected function attachLoggerToClient(Client $client)
+    protected function attachLoggerToClient(ClientInterface $client)
     {
         $client
             ->on('request', function (RequestInterface $request) {

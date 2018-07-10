@@ -2,17 +2,22 @@
 
 namespace Jmoo\React\Chrome;
 
-use Jmoo\React\Support\AwaitablePromise;
 use Evenement\EventEmitterInterface;
+use React\EventLoop\LoopInterface;
 
 interface ConnectionInterface extends EventEmitterInterface
 {
-    public function send($method, $params = []) : AwaitablePromise;
-    public function enable(array $domains) : AwaitablePromise;
+    public function send($method, $params = []);
+
+    public function enable(array $domains);
+
+    public function createSession($targetId);
+
     public function disconnect();
-    public function awaitAll(array $promises);
-    public function awaitAny(array $promises);
-    public function sleep($seconds);
-    public function getDomain($name) : Domain;
-    public function __get($name): Domain;
+
+    public function getDomain($name);
+
+    public function getLoop(): LoopInterface;
+
+    public function __get($name);
 }

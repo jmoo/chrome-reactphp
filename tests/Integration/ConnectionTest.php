@@ -2,20 +2,18 @@
 
 namespace Jmoo\React\Chrome\Tests\Integration;
 
-use Jmoo\React\Chrome\Client;
+
+use Jmoo\React\Chrome\Blocking\Client;
 use Jmoo\React\Chrome\ConnectionInterface;
-use Jmoo\React\Support\AwaitablePromise;
-use React\Promise\Promise;
+
 
 class ConnectionTest extends AbstractConnectionTest
 {
     protected function connect(): ConnectionInterface
     {
-        $timeout = AbstractConnectionTest::TIMEOUT;
-
         $client = new Client;
-        $page = $client->new()->await($timeout);
-        $connection = $client->connect($page->webSocketDebuggerUrl)->await($timeout);
+        $page = $client->new();
+        $connection = $client->connect($page->webSocketDebuggerUrl);
         $this->attachLoggerToConnection($connection);
         return $connection;
     }
@@ -26,12 +24,8 @@ class ConnectionTest extends AbstractConnectionTest
      */
     public function canSendMessageAndReceiveResponse()
     {
-        $this->connection
-            ->send('Page.enable')
-            ->then(function ($msg) {
-                $this->assertInstanceOf(\stdClass::class, $msg);
-            })
-            ->await(self::TIMEOUT);
+        $msg = $this->connection->send('Page.enable');
+        $this->assertInstanceOf(\stdClass::class, $msg);
     }
 
     /**
@@ -40,12 +34,7 @@ class ConnectionTest extends AbstractConnectionTest
      */
     public function canSendMessageToDomainAndReceiveResponse()
     {
-        $this->connection
-            ->getDomain('Page')
-            ->send('enable')
-            ->then(function ($msg) {
-                $this->assertInstanceOf(\stdClass::class, $msg);
-            })
-            ->await(self::TIMEOUT);
+        $msg = $this->connection->getDomain('Page')->send('enable');
+        $this->assertInstanceOf(\stdClass::class, $msg);
     }
 }
