@@ -157,9 +157,7 @@ $c->waitForDisconnect();
 $client = new \Jmoo\React\Chrome\Blocking\Client;
 $c = $client->connect($client->version()->webSocketDebuggerUrl);
 
-$c->on('Target.targetCreated', function($event) use ($c) {
-    $session = $c->createSession($event->targetInfo->targetId);
-    $session->Page->enable();
-});
-
+$target = $c->send('Target.createTarget', ['url' => 'about:blank']);
+$session = $c->createSession($target->targetId);
+$session->Page->enable();
 ```
