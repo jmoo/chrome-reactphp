@@ -63,7 +63,7 @@ abstract class AbstractConnection extends EventEmitter implements ConnectionInte
         });
     }
 
-    public function getDomain($name): Domain
+    public function getDomain(string $name): Domain
     {
         return array_key_exists($name, $this->domains)
             ? $this->domains[$name]

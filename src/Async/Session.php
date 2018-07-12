@@ -36,7 +36,7 @@ class Session extends AbstractConnection
         });
     }
 
-    public function send($method, $params = []): PromiseInterface
+    public function send(string $method, array $params = []): PromiseInterface
     {
         $args = new \stdClass;
         $args->id = $this->messageId++;
