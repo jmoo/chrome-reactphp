@@ -18,13 +18,13 @@ interface ClientInterface extends EventEmitterInterface
 
     public function version();
 
-    public function activate($pageId);
+    public function activate(string $pageId);
 
-    public function close($pageId);
+    public function close(string $pageId);
 
     public function getLoop(): LoopInterface;
 
-    public function connect($url);
+    public function connect(string $url);
 
     public function send(RequestInterface $request);
 

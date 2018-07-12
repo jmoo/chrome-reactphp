@@ -44,7 +44,7 @@ class Connection implements ConnectionInterface
         return $this->block($this->deferred->promise(), $timeout);
     }
 
-    public function send($method, $params = [], int $timeout = null): \stdClass
+    public function send(string $method, array $params = [], int $timeout = null): \stdClass
     {
         return $this->block($this->connection->send($method, $params), $timeout);
     }
@@ -65,7 +65,7 @@ class Connection implements ConnectionInterface
         return new Connection($session, $this->timeout);
     }
 
-    public function getDomain($name): DomainInterface
+    public function getDomain(string $name): DomainInterface
     {
         return new Domain($this->connection->getDomain($name), $this->timeout);
     }

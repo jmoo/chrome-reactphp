@@ -49,12 +49,12 @@ class Client implements ClientInterface
         return $this->block($this->client->version(), $timeout);
     }
 
-    public function activate($pageId, int $timeout = null)
+    public function activate(string $pageId, int $timeout = null)
     {
         return $this->block($this->client->activate($pageId), $timeout);
     }
 
-    public function close($pageId, int $timeout = null)
+    public function close(string $pageId, int $timeout = null)
     {
         return $this->block($this->client->close($pageId), $timeout);
     }
@@ -64,7 +64,7 @@ class Client implements ClientInterface
         return $this->client->getLoop();
     }
 
-    public function connect($url, int $timeout = null)
+    public function connect(string $url, int $timeout = null)
     {
         return new Connection($this->block($this->client->connect($url), $timeout), $this->timeout);
     }

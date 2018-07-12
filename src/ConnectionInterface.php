@@ -7,7 +7,7 @@ use React\EventLoop\LoopInterface;
 
 interface ConnectionInterface extends EventEmitterInterface
 {
-    public function send($method, $params = []);
+    public function send(string $method, array $params = []);
 
     public function enable(array $domains);
 
@@ -15,7 +15,7 @@ interface ConnectionInterface extends EventEmitterInterface
 
     public function disconnect();
 
-    public function getDomain($name);
+    public function getDomain(string $name);
 
     public function getLoop(): LoopInterface;
 

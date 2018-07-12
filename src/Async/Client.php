@@ -80,12 +80,12 @@ class Client extends EventEmitter implements ClientInterface
         return $this->request('GET', '/json/version');
     }
 
-    public function activate($pageId): PromiseInterface
+    public function activate(string $pageId): PromiseInterface
     {
         return $this->request('POST', '/json/activate/' . $pageId);
     }
 
-    public function close($pageId): PromiseInterface
+    public function close(string $pageId): PromiseInterface
     {
         return $this->request('POST', '/json/close/' . $pageId);
     }
@@ -95,7 +95,7 @@ class Client extends EventEmitter implements ClientInterface
         return $this->loop;
     }
 
-    public function connect($url): PromiseInterface
+    public function connect(string $url): PromiseInterface
     {
         if (!empty($this->options['ws_proxy'])) {
             $url = $this->getWebsocketProxyUrl($url);
